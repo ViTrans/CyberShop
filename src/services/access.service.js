@@ -34,19 +34,6 @@ class AccessService {
         roles: [RoleShop.SHOP],
       });
       if (newShop) {
-        // create private and public key
-        // const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", {
-        //   modulusLength: 4096,
-        //   publicKeyEncoding: {
-        //     type: "spki",
-        //     format: "pem",
-        //   },
-        //   privateKeyEncoding: {
-        //     type: "pkcs8",
-        //     format: "pem",
-        //   },
-        // });
-
         const privateKey = crypto.randomBytes(64).toString("hex");
         const publicKey = crypto.randomBytes(64).toString("hex");
 
