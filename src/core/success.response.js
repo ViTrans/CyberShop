@@ -13,7 +13,7 @@ class SuccessResponse {
     message,
     statusCode = StatusCode.OK,
     reasonStatusCode = ReasonStatusCode.OK,
-    metaData = {}
+    metaData
   ) {
     this.message = !message ? ReasonStatusCode.OK : message;
     this.status = statusCode;
