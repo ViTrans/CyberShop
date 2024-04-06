@@ -7,6 +7,7 @@ const {
 } = require("../models/product.model");
 
 const mongoose = require("mongoose");
+const { getSelectData } = require("../utils");
 
 class ProductFactory {
   static productRegistry = {}; // store product types
@@ -86,6 +87,33 @@ class ProductFactory {
         score: { $meta: "textScore" },
       }
     ).sort({ score: { $meta: "textScore" } });
+  }
+
+  // find all products
+  static async findAllProducts({
+    limit = 50,
+    sort = "ctime",
+    page = 1,
+    filter = { isPublished: true },
+    select = ["product_name", "product_thumb", "product_price"],
+  }) {
+    const skip = (page - 1) * limit;
+    const sortBy = sort === "ctime" ? { _id: -1 } : { _id: 1 };
+    const products = await ProductModel.find(filter)
+      .sort(sortBy)
+      .skip(skip)
+      .limit(limit)
+      .select(getSelectData(select))
+      .lean();
+    return products;
+  }
+
+  // find product by id
+  static async findProductById(product_id) {
+    return await ProductModel.findById(product_id).populate(
+      "product_shop",
+      "name email"
+    );
   }
 }
 

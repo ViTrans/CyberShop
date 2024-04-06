@@ -67,6 +67,22 @@ class ProductController {
       metaData: await ProductService.searchProduct(req.params),
     }).send(res);
   };
+
+  // find all products
+  findAllProducts = async (req, res, next) => {
+    new SuccessResponse({
+      message: "All products",
+      metaData: await ProductService.findAllProducts(req.query),
+    }).send(res);
+  };
+
+  // find product by id
+  findProductById = async (req, res, next) => {
+    new SuccessResponse({
+      message: "Product found",
+      metaData: await ProductService.findProductById(req.params.id),
+    }).send(res);
+  };
 }
 
 module.exports = new ProductController();
