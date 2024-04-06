@@ -6,12 +6,13 @@ const {
   FurnitureModel,
 } = require("../models/product.model");
 
+const mongoose = require("mongoose");
+
 class ProductFactory {
   static productRegistry = {}; // store product types
 
   static registerProductType(type, classRef) {
     ProductFactory.productRegistry[type] = classRef;
-    console.log(ProductFactory.productRegistry);
   }
 
   static async createProduct(type, payload) {
@@ -20,6 +21,71 @@ class ProductFactory {
       throw new BadRequestError("Invalid product type");
     }
     return new productClass(payload).createProduct();
+  }
+
+  static async findAllDraftsForShop(
+    product_shop,
+    { limit = 10, skip = 0 } = {}
+  ) {
+    return await ProductModel.find({ product_shop, isDraft: true })
+      .populate("product_shop", "name email")
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(skip);
+  }
+
+  static async findAllPublishedForShop(
+    product_shop,
+    { limit = 10, skip = 0 } = {}
+  ) {
+    return await ProductModel.find({ product_shop, isPublished: true })
+      .populate("product_shop", "name email")
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(skip);
+  }
+
+  // publish product by shop
+  static async publishProductByShop(product_shop, product_id) {
+    console.log("product_shop", product_shop);
+    console.log("product_id", product_id);
+    const product = await ProductModel.findOne({
+      _id: product_id,
+      product_shop,
+    });
+    if (!product) {
+      throw new BadRequestError("Product not found");
+    }
+    product.isDraft = false;
+    product.isPublished = true;
+    return await product.save();
+  }
+
+  // unpublish product by shop
+  static async unPublishProductByShop(product_shop, product_id) {
+    const product = await ProductModel.findOne({
+      _id: product_id,
+      product_shop,
+    });
+    if (!product) {
+      throw new BadRequestError("Product not found");
+    }
+    product.isDraft = true;
+    product.isPublished = false;
+    return await product.save();
+  }
+
+  // search product
+  static async searchProduct({ keySearch }) {
+    return await ProductModel.find(
+      {
+        $text: { $search: keySearch },
+        isPublished: true,
+      },
+      {
+        score: { $meta: "textScore" },
+      }
+    ).sort({ score: { $meta: "textScore" } });
   }
 }
 
@@ -46,8 +112,8 @@ class Product {
   }
 
   // create new product
-  async createProduct(product_id) {
-    return await ProductModel.create({ ...this, product_shop: product_id });
+  async createProduct() {
+    return await ProductModel.create({ ...this });
   }
 }
 
@@ -61,7 +127,7 @@ class Clothing extends Product {
     if (!newClothing) {
       throw new BadRequestError("Cannot create new clothing product");
     }
-    const newProduct = await super.createProduct(newClothing._id);
+    const newProduct = await super.createProduct(newClothing._id); // call parent method
     if (!newProduct) {
       throw new BadRequestError("Cannot create new product");
     }
@@ -94,7 +160,7 @@ class Furniture extends Product {
     if (!newFurniture) {
       throw new BadRequestError("Cannot create new Furniture product");
     }
-    const newProduct = await super.createProduct(newFurniture._id);
+    const newProduct = await super.createProduct();
     if (!newProduct) {
       throw new BadRequestError("Cannot create new product");
     }

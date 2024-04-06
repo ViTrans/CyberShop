@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const slugify = require("slugify");
 
 var productSchema = new mongoose.Schema({
   product_name: {
@@ -10,6 +11,9 @@ var productSchema = new mongoose.Schema({
     required: true,
   },
   product_description: {
+    type: String,
+  },
+  product_slug: {
     type: String,
   },
   product_price: {
@@ -27,19 +31,50 @@ var productSchema = new mongoose.Schema({
   },
   product_shop: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Shop",
+    ref: "Shops",
   },
   product_attributes: {
     type: mongoose.Schema.Types.Mixed,
     required: true,
   },
+  product_ratingAvg: {
+    type: Number,
+    default: 4.5,
+    min: [1, "Rating must be at least 1"],
+    max: [5, "Rating must not be more than 5"],
+    set: (v) => Math.round(v * 10) / 10,
+  },
+  product_variants: {
+    type: Array,
+    default: [],
+  },
+  isDraft: {
+    type: Boolean,
+    default: true,
+    index: true,
+    select: false,
+  },
+  isPublished: {
+    type: Boolean,
+    default: false,
+    index: true,
+    select: false,
+  },
+});
+// create index for search
+productSchema.index({ product_name: "text", product_description: "text" });
+
+// Create a slug for the product
+productSchema.pre("save", function (next) {
+  this.product_slug = slugify(this.product_name, { lower: true });
+  next();
 });
 
 const clothingSchema = new mongoose.Schema(
   {
     product_shop: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Shop",
+      ref: "Shops",
     },
     brand: {
       type: String,
@@ -64,7 +99,7 @@ const ElectronicSchema = new mongoose.Schema(
   {
     product_shop: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Shop",
+      ref: "Shops",
     },
     manufactuer: {
       type: String,
@@ -88,7 +123,7 @@ const furnitureSchema = new mongoose.Schema(
   {
     product_shop: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Shop",
+      ref: "Shops",
     },
     size: {
       // small, medium, large
