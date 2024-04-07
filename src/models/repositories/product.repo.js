@@ -1,12 +1,20 @@
 const { ProductModel } = require("../product.model");
 
-const findAllDraftsForShop = async ({ query, limit, skip }) => {
-  return await ProductModel.find(query)
-    .populate("product_shop")
-    .limit(limit)
-    .skip(skip);
+const updateProductById = async ({
+  product_id,
+  payload,
+  model,
+  isNew = true,
+}) => {
+  return await ProductModel.findByIdAndUpdate(
+    product_id,
+    { ...payload },
+    {
+      new: isNew,
+    }
+  );
 };
 
 module.exports = {
-  findAllDraftsForShop,
+  updateProductById,
 };

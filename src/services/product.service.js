@@ -7,7 +7,13 @@ const {
 } = require("../models/product.model");
 
 const mongoose = require("mongoose");
-const { getSelectData } = require("../utils");
+const {
+  getSelectData,
+  removeUndefinedObject,
+  updateNestedObject,
+} = require("../utils");
+const { updateProductById } = require("../models/repositories/product.repo");
+const productModel = require("../models/product.model");
 
 class ProductFactory {
   static productRegistry = {}; // store product types
@@ -22,6 +28,14 @@ class ProductFactory {
       throw new BadRequestError("Invalid product type");
     }
     return new productClass(payload).createProduct();
+  }
+
+  static async updateProduct(type, product_id, payload) {
+    const productClass = ProductFactory.productRegistry[type];
+    if (!productClass) {
+      throw new BadRequestError("Invalid product type");
+    }
+    return new productClass(payload).updateProduct(product_id);
   }
 
   static async findAllDraftsForShop(
@@ -48,8 +62,6 @@ class ProductFactory {
 
   // publish product by shop
   static async publishProductByShop(product_shop, product_id) {
-    console.log("product_shop", product_shop);
-    console.log("product_id", product_id);
     const product = await ProductModel.findOne({
       _id: product_id,
       product_shop,
@@ -143,6 +155,13 @@ class Product {
   async createProduct() {
     return await ProductModel.create({ ...this });
   }
+  async updateProduct(product_id, payload) {
+    return await updateProductById({
+      product_id,
+      payload,
+      model: ProductModel,
+    });
+  }
 }
 
 // define subclass for different product types clothing
@@ -155,11 +174,27 @@ class Clothing extends Product {
     if (!newClothing) {
       throw new BadRequestError("Cannot create new clothing product");
     }
-    const newProduct = await super.createProduct(newClothing._id); // call parent method
+    const newProduct = await super.createProduct(); // call parent method
     if (!newProduct) {
       throw new BadRequestError("Cannot create new product");
     }
     return newProduct;
+  }
+
+  async updateProduct(product_id) {
+    const objectParams = removeUndefinedObject(this);
+    if (objectParams.product_attributes) {
+      await updateProductById({
+        product_id,
+        payload: updateNestedObject(objectParams.product_attributes),
+        model: ClothingModel,
+      });
+    }
+    const updateProduct = await super.updateProduct(
+      product_id,
+      updateNestedObject(objectParams)
+    );
+    return updateProduct;
   }
 }
 // define subclass for different product types electronics
@@ -172,11 +207,26 @@ class Electronics extends Product {
     if (!newElectronic) {
       throw new BadRequestError("Cannot create new Electronics product");
     }
-    const newProduct = await super.createProduct(newElectronic._id);
+    const newProduct = await super.createProduct();
     if (!newProduct) {
       throw new BadRequestError("Cannot create new product");
     }
     return newProduct;
+  }
+  async updateProduct(product_id) {
+    const objectParams = removeUndefinedObject(this);
+    if (objectParams.product_attributes) {
+      await updateProductById({
+        product_id,
+        payload: updateNestedObject(objectParams.product_attributes),
+        model: ElectronicsModel,
+      });
+    }
+    const updateProduct = await super.updateProduct(
+      product_id,
+      updateNestedObject(objectParams)
+    );
+    return updateProduct;
   }
 }
 class Furniture extends Product {
@@ -189,10 +239,28 @@ class Furniture extends Product {
       throw new BadRequestError("Cannot create new Furniture product");
     }
     const newProduct = await super.createProduct();
+
+    console.log("new product", newProduct);
     if (!newProduct) {
       throw new BadRequestError("Cannot create new product");
     }
     return newProduct;
+  }
+
+  async updateProduct(product_id) {
+    const objectParams = removeUndefinedObject(this);
+    if (objectParams.product_attributes) {
+      await updateProductById({
+        product_id,
+        payload: updateNestedObject(objectParams.product_attributes),
+        model: FurnitureModel,
+      });
+    }
+    const updateProduct = await super.updateProduct(
+      product_id,
+      updateNestedObject(objectParams)
+    );
+    return updateProduct;
   }
 }
 
