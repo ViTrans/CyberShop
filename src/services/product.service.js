@@ -14,6 +14,7 @@ const {
 } = require("../utils");
 const { updateProductById } = require("../models/repositories/product.repo");
 const productModel = require("../models/product.model");
+const { insertInventory } = require("../models/repositories/inventory.repo");
 
 class ProductFactory {
   static productRegistry = {}; // store product types
@@ -153,7 +154,16 @@ class Product {
 
   // create new product
   async createProduct() {
-    return await ProductModel.create({ ...this });
+    const newProduct = await ProductModel.create({ ...this });
+    if (newProduct) {
+      // create inventory for product
+      await insertInventory({
+        product_id: newProduct._id,
+        shop_id: this.product_shop,
+        stock: this.product_quantity,
+      });
+    }
+    return newProduct;
   }
   async updateProduct(product_id, payload) {
     return await updateProductById({
